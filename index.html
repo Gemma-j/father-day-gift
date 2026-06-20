@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>父亲节快乐 - 漂浮文字动画</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #000011;
+    overflow: hidden;
+    min-height: 100vh;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #animation-canvas {
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    background: radial-gradient(ellipse at center, #0a0a2e 0%, #000011 100%);
+  }
+
+  #admin-toggle-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 200;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+  }
+
+  #admin-toggle-btn:hover {
+    opacity: 1;
+  }
+
+  body.user-mode #admin-toggle-btn {
+    opacity: 0.15;
+  }
+
+  body.user-mode #control-panel {
+    display: none;
+  }
+
+  body.user-mode #bg-music {
+    width: 220px;
+    height: 32px;
+  }
+
+  #control-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 340px;
+    background: rgba(20, 30, 80, 0.85);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    padding: 20px;
+    color: #e0e7ff;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  #control-panel h2 {
+    color: #60a5fa;
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+  }
+
+  #control-panel h3 {
+    color: #93c5fd;
+    margin: 15px 0 8px 0;
+    font-size: 14px;
+  }
+
+  #sentence-list {
+    list-style: none;
+    max-height: 180px;
+    overflow-y: auto;
+    background: rgba(0, 0, 30, 0.5);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+
+  #sentence-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    margin: 4px 0;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dbeafe;
+  }
+
+  #sentence-list li span {
+    flex: 1;
+    margin-right: 8px;
+    word-break: break-all;
+  }
+
+  #sentence-list li button {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  #sentence-list li button:hover {
+    background: #b91c1c;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  #new-sentence-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    background: rgba(0, 0, 30, 0.6);
+    color: #e0e7ff;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+
+  #new-sentence-input:focus {
+    border-color: #60a5fa;
+  }
+
+  button {
+    padding: 8px 14px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  button:hover {
+    background: #1d4ed8;
+  }
+
+  button:active {
+    transform: scale(0.96);
+  }
+
+  .button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .button-row button {
+    flex: 1;
+    background: #1e40af;
+  }
+
+  .button-row button:hover {
+    background: #1e3a8a;
+  }
+
+  #reset-btn {
+    background: #3730a3;
+  }
+
+  #reset-btn:hover {
+    background: #312e81;
+  }
+
+  #bg-music {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    width: 260px;
+    height: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    z-index: 999;
+    opacity: 0.7;
+    transition: opacity 0.3s, transform 0.3s;
+    background: rgba(20, 30, 80, 0.6);
+  }
+
+  #bg-music:hover {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  body.user-mode #bg-music {
+    opacity: 0.4;
+  }
+
+  body.user-mode #bg-music:hover {
+    opacity: 0.8;
+  }
+
+  #bg-music.hidden {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .music-row {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #music-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    padding: 10px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  #music-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  }
+
+  #music-btn.playing {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+
+  #music-btn.playing:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+  }
+
+  #music-status {
+    font-size: 12px;
+    color: #93c5fd;
+    text-align: center;
+  }
+
+  #status-message {
+    margin-top: 12px;
+    padding: 8px;
+    text-align: center;
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+    border-radius: 6px;
+    font-size: 13px;
+    display: none;
+  }
+
+  #status-message.show {
+    display: block;
+  }
+
+  .floating-text {
+    position: absolute;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: floatUp linear forwards;
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 2px 4px rgba(0, 0, 0, 0.8);
+    user-select: none;
+    will-change: transform, opacity;
+    transform: translateX(-50%) translateY(0) scale(0.8);
+  }
+
+  @keyframes floatUp {
+    0% {
+      transform: translateX(-50%) translateY(0) scale(0.8);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-5vh) scale(1);
+    }
+    90% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-95vh) scale(1);
+    }
+    100% {
+      transform: translateX(-50%) translateY(-110vh) scale(0.9);
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 767px) {
+    #bg-music {
+      width: 140px;
+      height: 28px;
+      bottom: 8px;
+      left: 8px;
+      opacity: 0.5;
+    }
+
+    body.user-mode #bg-music {
+      width: 160px;
+    }
+
+    #control-panel {
+      position: fixed;
+      width: 100%;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      border-radius: 12px 12px 0 0;
+      max-height: 50vh;
+    }
+
+    #sentence-list {
+      max-height: 120px;
+    }
+  }
+
+  #sentence-list::-webkit-scrollbar,
+  #control-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #sentence-list::-webkit-scrollbar-track,
+  #control-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+
+  #sentence-list::-webkit-scrollbar-thumb,
+  #control-panel::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+  <div id="animation-canvas"></div>
+
+  <audio id="bg-music" loop autoplay preload="auto">
+    <source src="music.mp3" type="audio/mpeg">
+    <source src="music.m4a" type="audio/mp4">
+    <source src="music.wav" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
+
+  <button id="admin-toggle-btn">⚙️</button>
+
+  <div id="control-panel">
+    <h2>💙 父亲节祝福 💙</h2>
+
+    <h3>句子列表</h3>
+    <ul id="sentence-list"></ul>
+
+    <h3>添加句子</h3>
+    <div class="input-group">
+      <input id="new-sentence-input" type="text" placeholder="输入父亲节祝福..." maxlength="50">
+      <button id="add-btn">添加</button>
+    </div>
+
+    <div class="button-row">
+      <button id="reset-btn">重置默认</button>
+      <button id="copy-link-btn">复制分享链接</button>
+    </div>
+
+    <div class="music-row">
+      <button id="music-btn">🎵 播放音乐：《单车》</button>
+      <div id="music-status">点击任意位置开始播放音乐</div>
+    </div>
+
+    <div id="status-message"></div>
+  </div>
+
+<script>
+(function() {
+  const DEFAULT_SENTENCES = [
+    "老爸辛苦了",
+    "父亲节快乐",
+    "虽然我不能到达您身边，但我很想你",
+    "照顾好自己，不要太累",
+    "爸爸我想你",
+    "你是最棒的老爸",
+    "老爸最帅",
+    "父亲节快乐爸比",
+    "辛苦了爸",
+    "感谢有你这样的爸爸",
+    "爸你是我的英雄",
+    "爸比节日快乐",
+    "父亲节只有一天，爸爸的爱却是岁岁年年",
+    "我可以装作没长大，你可不可以不要变老",
+    "能遮风挡雨的不只是房子，还有父亲",
+    "你是我最大的靠山，所以我不怕跌倒",
+    "感谢你不是超人，却为我变成了万能",
+    "愿时间慢一点，我想爱你多一点"
+  ];
+
+  const COLORS = [
+    "#1e3a8a",
+    "#2563eb",
+    "#3b82f6",
+    "#60a5fa",
+    "#1e40af",
+    "#3730a3",
+    "#0ea5e9"
+  ];
+
+  const ICONS = ['🍺', '🚗', '🏎️', '🏍️', '🛠️', '⚙️', '🔧', '🍻'];
+
+  const STORAGE_KEY = 'fatherDaySentences';
+
+  let sentences = [];
+
+  function checkIsAdmin() {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    return params.get('admin') === '1' || params.get('admin') === 'true' || hash.includes('admin');
+  }
+
+  const isAdminMode = checkIsAdmin();
+
+  const canvas = document.getElementById('animation-canvas');
+  const sentenceList = document.getElementById('sentence-list');
+  const newSentenceInput = document.getElementById('new-sentence-input');
+  const addBtn = document.getElementById('add-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const copyLinkBtn = document.getElementById('copy-link-btn');
+  const statusMessage = document.getElementById('status-message');
+  const bgMusic = document.getElementById('bg-music');
+  const musicBtn = document.getElementById('music-btn');
+  const musicStatus = document.getElementById('music-status');
+  const adminToggleBtn = document.getElementById('admin-toggle-btn');
+  let hasInteracted = false;
+  let musicPlayed = false;
+
+  if (!isAdminMode) {
+    document.body.classList.add('user-mode');
+  }
+
+  function loadSentences() {
+    let customSentences = [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          customSentences = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('localStorage 解析失败，使用默认句子', e);
+    }
+
+    const merged = DEFAULT_SENTENCES.slice();
+    customSentences.forEach(function(s) {
+      if (merged.indexOf(s) === -1) {
+        merged.push(s);
+      }
+    });
+    sentences = merged;
+  }
+
+  function saveSentences() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sentences));
+    } catch (e) {
+      console.warn('localStorage 保存失败', e);
+    }
+  }
+
+  function renderSentenceList() {
+    sentenceList.innerHTML = '';
+    sentences.forEach(function(sentence, index) {
+      const li = document.createElement('li');
+
+      const span = document.createElement('span');
+      span.textContent = sentence;
+
+      const btn = document.createElement('button');
+      btn.textContent = '删除';
+      btn.addEventListener('click', function() {
+        sentences.splice(index, 1);
+        saveSentences();
+        renderSentenceList();
+      });
+
+      li.appendChild(span);
+      li.appendChild(btn);
+      sentenceList.appendChild(li);
+    });
+  }
+
+  function showStatus(msg) {
+    statusMessage.textContent = msg;
+    statusMessage.classList.add('show');
+    setTimeout(function() {
+      statusMessage.classList.remove('show');
+      statusMessage.textContent = '';
+    }, 2000);
+  }
+
+  function randomItem(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function randomRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function createFloatingText() {
+    if (sentences.length === 0) return;
+
+    const el = document.createElement('div');
+    el.className = 'floating-text';
+
+    let text = randomItem(sentences);
+    if (Math.random() < 0.5) {
+      text = text + ' ' + randomItem(ICONS);
+    }
+
+    const color = randomItem(COLORS);
+    const fontSize = Math.floor(randomRange(12, 40));
+    const leftPos = randomRange(8, 92);
+    const opacity = randomRange(0.3, 1.0);
+    const duration = randomRange(5, 10);
+
+
+    el.textContent = text;
+    el.style.color = color;
+    el.style.fontSize = fontSize + 'px';
+    el.style.left = leftPos + '%';
+    el.style.bottom = '-10vh';
+    el.style.opacity = opacity;
+    el.style.animationDuration = duration + 's';
+
+    canvas.appendChild(el);
+
+    el.addEventListener('animationend', function() {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    });
+  }
+
+  function scheduleNext() {
+    const delay = Math.floor(randomRange(80, 200));
+    setTimeout(function() {
+      createFloatingText();
+      scheduleNext();
+    }, delay);
+  }
+
+  addBtn.addEventListener('click', function() {
+    const value = newSentenceInput.value.trim();
+    if (value === '') return;
+    sentences.push(value);
+    saveSentences();
+    renderSentenceList();
+    newSentenceInput.value = '';
+  });
+
+  newSentenceInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      addBtn.click();
+    }
+  });
+
+  resetBtn.addEventListener('click', function() {
+    sentences = DEFAULT_SENTENCES.slice();
+    saveSentences();
+    renderSentenceList();
+    showStatus('已重置为默认句子');
+  });
+
+  copyLinkBtn.addEventListener('click', function() {
+    const urlObj = new URL(window.location.href);
+    urlObj.searchParams.delete('admin');
+    urlObj.hash = '';
+    const url = urlObj.toString();
+    const promise = navigator.clipboard && navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(url)
+      : new Promise(function(resolve, reject) {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            ok ? resolve() : reject();
+          } catch (e) {
+            reject(e);
+          }
+        });
+
+    promise.then(function() {
+      showStatus('链接已复制！');
+    }).catch(function() {
+      showStatus('复制失败，请手动复制');
+    });
+  });
+
+  function tryPlayMusic() {
+    if (!bgMusic || musicPlayed) return;
+    const playPromise = bgMusic.play();
+    if (playPromise !== undefined) {
+      playPromise.then(function() {
+        musicPlayed = true;
+        musicBtn.textContent = '⏸ 暂停音乐';
+        musicBtn.classList.add('playing');
+        musicStatus.textContent = '正在播放：陈奕迅《单车》';
+      }).catch(function(error) {
+        console.warn('自动播放被浏览器阻止，等待用户交互：', error);
+        musicStatus.textContent = '点击页面任意位置或"播放音乐"按钮开始播放';
+      });
+    }
+  }
+
+  function toggleMusic() {
+    if (!bgMusic) return;
+    if (bgMusic.paused) {
+      bgMusic.play().then(function() {
+        musicPlayed = true;
+        musicBtn.textContent = '⏸ 暂停音乐';
+        musicBtn.classList.add('playing');
+        musicStatus.textContent = '正在播放：陈奕迅《单车》';
+      }).catch(function(error) {
+        console.error('播放失败：', error);
+        musicStatus.textContent = '请确认音乐文件 music.mp3 已上传到仓库';
+      });
+    } else {
+      bgMusic.pause();
+      musicPlayed = false;
+      musicBtn.textContent = '🎵 播放音乐：《单车》';
+      musicBtn.classList.remove('playing');
+      musicStatus.textContent = '音乐已暂停';
+    }
+  }
+
+  document.addEventListener('click', function onFirstClick() {
+    if (!hasInteracted) {
+      hasInteracted = true;
+      tryPlayMusic();
+    }
+  }, { once: false });
+
+  musicBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleMusic();
+  });
+
+  adminToggleBtn.addEventListener('click', function() {
+    const currentUrl = new URL(window.location.href);
+    if (isAdminMode) {
+      currentUrl.searchParams.delete('admin');
+      currentUrl.hash = '';
+    } else {
+      currentUrl.searchParams.set('admin', '1');
+    }
+    window.location.href = currentUrl.toString();
+  });
+
+  if (copyLinkBtn) {
+    copyLinkBtn.textContent = '复制分享链接';
+  }
+
+  loadSentences();
+  renderSentenceList();
+  scheduleNext();
+  tryPlayMusic();
+})();
+</script>
+</body>
+</html>
