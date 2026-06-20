@@ -206,19 +206,29 @@
 
   #bg-music {
     position: fixed;
-    bottom: 10px;
-    left: 10px;
-    width: 240px;
-    height: 135px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    bottom: 15px;
+    left: 15px;
+    width: 260px;
+    height: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     z-index: 999;
-    opacity: 0.85;
-    transition: opacity 0.3s;
+    opacity: 0.7;
+    transition: opacity 0.3s, transform 0.3s;
+    background: rgba(20, 30, 80, 0.6);
   }
 
   #bg-music:hover {
     opacity: 1;
+    transform: scale(1.02);
+  }
+
+  body.user-mode #bg-music {
+    opacity: 0.4;
+  }
+
+  body.user-mode #bg-music:hover {
+    opacity: 0.8;
   }
 
   #bg-music.hidden {
@@ -344,15 +354,12 @@
 <body>
   <div id="animation-canvas"></div>
 
-  <iframe id="bg-music"
-    src="https://player.bilibili.com/player.html?bvid=BV1Ra4y1A7Lk&page=1&high_quality=1&autoplay=1&danmaku=0&muted=0"
-    scrolling="no"
-    border="0"
-    frameborder="no"
-    framespacing="0"
-    allowfullscreen="true"
-    allow="autoplay">
-  </iframe>
+  <audio id="bg-music" loop autoplay preload="auto">
+    <source src="music.mp3" type="audio/mpeg">
+    <source src="music.m4a" type="audio/mp4">
+    <source src="music.wav" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
 
   <button id="admin-toggle-btn">⚙️</button>
 
@@ -520,6 +527,7 @@
     const opacity = randomRange(0.3, 1.0);
     const duration = randomRange(5, 10);
 
+
     el.textContent = text;
     el.style.color = color;
     el.style.fontSize = fontSize + 'px';
@@ -597,36 +605,40 @@
     });
   });
 
-  const BILI_URL = 'https://player.bilibili.com/player.html?bvid=BV1Ra4y1A7Lk&page=1&high_quality=1&autoplay=1&danmaku=0&muted=0';
-
   function tryPlayMusic() {
     if (!bgMusic || musicPlayed) return;
-    try {
-      bgMusic.src = BILI_URL;
-      musicPlayed = true;
-      musicBtn.textContent = '⏸ 暂停音乐';
-      musicBtn.classList.add('playing');
-      musicStatus.textContent = '正在播放：陈奕迅《单车》';
-    } catch (error) {
-      console.warn('自动播放被浏览器阻止，等待用户交互：', error);
-      musicStatus.textContent = '点击上方 "播放音乐" 按钮开始播放';
+    const playPromise = bgMusic.play();
+    if (playPromise !== undefined) {
+      playPromise.then(function() {
+        musicPlayed = true;
+        musicBtn.textContent = '⏸ 暂停音乐';
+        musicBtn.classList.add('playing');
+        musicStatus.textContent = '正在播放：陈奕迅《单车》';
+      }).catch(function(error) {
+        console.warn('自动播放被浏览器阻止，等待用户交互：', error);
+        musicStatus.textContent = '点击页面任意位置或"播放音乐"按钮开始播放';
+      });
     }
   }
 
   function toggleMusic() {
     if (!bgMusic) return;
-    if (musicPlayed) {
-      bgMusic.src = 'about:blank';
+    if (bgMusic.paused) {
+      bgMusic.play().then(function() {
+        musicPlayed = true;
+        musicBtn.textContent = '⏸ 暂停音乐';
+        musicBtn.classList.add('playing');
+        musicStatus.textContent = '正在播放：陈奕迅《单车》';
+      }).catch(function(error) {
+        console.error('播放失败：', error);
+        musicStatus.textContent = '请确认音乐文件 music.mp3 已上传到仓库';
+      });
+    } else {
+      bgMusic.pause();
       musicPlayed = false;
       musicBtn.textContent = '🎵 播放音乐：《单车》';
       musicBtn.classList.remove('playing');
       musicStatus.textContent = '音乐已暂停';
-    } else {
-      bgMusic.src = BILI_URL;
-      musicPlayed = true;
-      musicBtn.textContent = '⏸ 暂停音乐';
-      musicBtn.classList.add('playing');
-      musicStatus.textContent = '正在播放：陈奕迅《单车》';
     }
   }
 
